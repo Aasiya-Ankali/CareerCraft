@@ -7,6 +7,7 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import AuthProvider from "@/components/auth-context"
 import { Toaster } from "@/components/ui/toaster"
+import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -30,6 +31,7 @@ export default function RootLayout({
           <main className="min-h-dvh bg-background text-foreground">{children}</main>
           <Footer />
           <Toaster />
+          <SonnerToaster />
         </AuthProvider>
         <Analytics />
       </body>
