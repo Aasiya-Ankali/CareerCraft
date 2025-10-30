@@ -10,9 +10,23 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell } from "recharts"
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  Legend,
+} from "recharts"
 import { toast } from "sonner"
-import { CheckCircle2, Clock, Target, TrendingUp, Calendar, Bell, Download, Repeat, Timer, Play, Pause, RotateCcw } from "lucide-react"
+import { Clock, Target, Bell, Download, Repeat, Play, Pause, RotateCcw } from "lucide-react"
+import CalendarView from "./calendar-view"
 
 type Task = {
   id: string
@@ -21,14 +35,14 @@ type Task = {
   completed: boolean
   createdAt: number
   completedAt?: number
-  priority?: 'low' | 'medium' | 'high'
+  priority?: "low" | "medium" | "high"
   deadline?: string | undefined
   group?: string
   estimatedTime?: number // in minutes
   timeSpent?: number // in minutes
   isTracking?: boolean
   startTime?: number
-  recurrence?: 'none' | 'daily' | 'weekly' | 'monthly'
+  recurrence?: "none" | "daily" | "weekly" | "monthly"
   reminder?: string | undefined // ISO date string
 }
 
@@ -110,28 +124,28 @@ function showTaskCompletionNotification(taskTitle: string) {
     if (Notification.permission === "granted") {
       new Notification("✅ Task Completed!", {
         body: `Great job completing "${taskTitle}"!`,
-        icon: "/placeholder-logo.svg"
+        icon: "/placeholder-logo.svg",
       })
     }
   }
   toast.success("Task completed!", {
-    description: `"${taskTitle}" is now done! 🎉`
+    description: `"${taskTitle}" is now done! 🎉`,
   })
 }
 
 function updateStreak() {
   const streak = loadStreak()
   const today = new Date().toISOString().slice(0, 10)
-  
+
   if (streak.lastDate === today) {
     // Already updated today
     return
   }
-  
+
   const yesterday = new Date()
   yesterday.setDate(yesterday.getDate() - 1)
   const yesterdayStr = yesterday.toISOString().slice(0, 10)
-  
+
   if (streak.lastDate === yesterdayStr) {
     // Continue streak
     streak.current += 1
@@ -139,7 +153,7 @@ function updateStreak() {
     // New streak
     streak.current = 1
   }
-  
+
   streak.lastDate = today
   saveStreak(streak)
 }
@@ -147,7 +161,7 @@ function updateStreak() {
 function scheduleReminder(taskId: string, title: string, reminderDate: string) {
   const reminderTime = new Date(reminderDate).getTime()
   const now = Date.now()
-  
+
   if (reminderTime > now) {
     const timeout = reminderTime - now
     setTimeout(() => {
@@ -155,55 +169,67 @@ function scheduleReminder(taskId: string, title: string, reminderDate: string) {
         if (Notification.permission === "granted") {
           new Notification(" Reminder", {
             body: `Don't forget: ${title}`,
-            icon: "/placeholder-logo.svg"
+            icon: "/placeholder-logo.svg",
           })
         }
       }
       toast.info("Reminder", {
-        description: title
+        description: title,
       })
     }, timeout)
   }
 }
 
-function createRecurringTask(task: Task, tasks: Task[], addTask: (title: string, notes?: string, priority?: Task['priority'], deadline?: string, group?: string, estimatedTime?: number, recurrence?: Task['recurrence'], reminder?: string) => void) {
-  if (task.recurrence === 'none') return
-  
+function createRecurringTask(
+  task: Task,
+  tasks: Task[],
+  addTask: (
+    title: string,
+    notes?: string,
+    priority?: Task["priority"],
+    deadline?: string,
+    group?: string,
+    estimatedTime?: number,
+    recurrence?: Task["recurrence"],
+    reminder?: string,
+  ) => void,
+) {
+  if (task.recurrence === "none") return
+
   const nextDate = new Date()
-  if (task.recurrence === 'daily') {
+  if (task.recurrence === "daily") {
     nextDate.setDate(nextDate.getDate() + 1)
-  } else if (task.recurrence === 'weekly') {
+  } else if (task.recurrence === "weekly") {
     nextDate.setDate(nextDate.getDate() + 7)
-  } else if (task.recurrence === 'monthly') {
+  } else if (task.recurrence === "monthly") {
     nextDate.setMonth(nextDate.getMonth() + 1)
   }
-  
+
   // Check if recurring task already exists for this date
-  const existingRecurring = tasks.find(t => 
-    t.title === task.title && 
-    t.recurrence === task.recurrence &&
-    t.deadline === nextDate.toISOString().slice(0, 10)
+  const existingRecurring = tasks.find(
+    (t) =>
+      t.title === task.title && t.recurrence === task.recurrence && t.deadline === nextDate.toISOString().slice(0, 10),
   )
-  
+
   if (!existingRecurring) {
     addTask(
       task.title,
       task.notes,
       task.priority,
       nextDate.toISOString().slice(0, 10),
-      task.group || 'General',
+      task.group || "General",
       task.estimatedTime,
       task.recurrence,
-      task.reminder
+      task.reminder,
     )
   }
 }
 
 function exportTasks(tasks: Task[]) {
   const dataStr = JSON.stringify(tasks, null, 2)
-  const dataBlob = new Blob([dataStr], { type: 'application/json' })
+  const dataBlob = new Blob([dataStr], { type: "application/json" })
   const url = URL.createObjectURL(dataBlob)
-  const link = document.createElement('a')
+  const link = document.createElement("a")
   link.href = url
   link.download = `careercraft-tasks-${new Date().toISOString().slice(0, 10)}.json`
   document.body.appendChild(link)
@@ -211,16 +237,16 @@ function exportTasks(tasks: Task[]) {
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
   toast.success("Tasks exported!", {
-    description: "Your tasks have been downloaded"
+    description: "Your tasks have been downloaded",
   })
 }
 
 function exportProductivityData(tasks: Task[]) {
   const data = groupByDay(tasks)
-  const csvContent = "Date,Planned,Completed\n" + data.map(d => `${d.date},${d.planned},${d.completed}`).join("\n")
-  const dataBlob = new Blob([csvContent], { type: 'text/csv' })
+  const csvContent = "Date,Planned,Completed\n" + data.map((d) => `${d.date},${d.planned},${d.completed}`).join("\n")
+  const dataBlob = new Blob([csvContent], { type: "text/csv" })
   const url = URL.createObjectURL(dataBlob)
-  const link = document.createElement('a')
+  const link = document.createElement("a")
   link.href = url
   link.download = `careercraft-productivity-${new Date().toISOString().slice(0, 10)}.csv`
   document.body.appendChild(link)
@@ -228,7 +254,7 @@ function exportProductivityData(tasks: Task[]) {
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
   toast.success("Productivity data exported!", {
-    description: "Your productivity data has been downloaded"
+    description: "Your productivity data has been downloaded",
   })
 }
 
@@ -242,7 +268,16 @@ function useTasks() {
     saveTasks(tasks)
   }, [tasks])
 
-  const addTask = (title: string, notes?: string, priority: Task['priority'] = 'low', deadline?: string, group: string = 'General', estimatedTime?: number, recurrence?: Task['recurrence'], reminder?: string) => {
+  const addTask = (
+    title: string,
+    notes?: string,
+    priority: Task["priority"] = "low",
+    deadline?: string,
+    group = "General",
+    estimatedTime?: number,
+    recurrence?: Task["recurrence"],
+    reminder?: string,
+  ) => {
     const newTask: Task = {
       id: crypto.randomUUID(),
       title,
@@ -255,14 +290,14 @@ function useTasks() {
       estimatedTime,
       timeSpent: 0,
       isTracking: false,
-      recurrence: recurrence || 'none',
-      reminder
+      recurrence: recurrence || "none",
+      reminder,
     }
     setTasks((prev) => [...prev, newTask])
-    
+
     // Show toast notification
     toast.success("Task added!", {
-      description: `"${title}" has been added to your list`
+      description: `"${title}" has been added to your list`,
     })
 
     // Set reminder if provided
@@ -270,71 +305,74 @@ function useTasks() {
       scheduleReminder(newTask.id, title, reminder)
     }
   }
-  
+
   const updateTask = (id: string, payload: Partial<Task>) => {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...payload } : t)))
-    
+
     // Reschedule reminder if changed
     if (payload.reminder !== undefined) {
-      const task = tasks.find(t => t.id === id)
+      const task = tasks.find((t) => t.id === id)
       if (payload.reminder) {
         scheduleReminder(id, task?.title || "", payload.reminder)
       }
     }
   }
-  
+
   const toggleTask = (id: string) => {
     setTasks((prev) =>
       prev.map((t) => {
         if (t.id === id) {
           const wasCompleted = t.completed
           const newCompleted = !t.completed
-          
+
           // Stop tracking when completing
           const updates: Partial<Task> = {
             completed: newCompleted,
             completedAt: newCompleted ? Date.now() : undefined,
             isTracking: newCompleted ? false : t.isTracking,
           }
-          
+
           // Send notification on completion
           if (!wasCompleted && newCompleted) {
             showTaskCompletionNotification(t.title)
-            
+
             // Check if daily goal is reached
-            const completedToday = prev.filter(task => task.completed && task.completedAt && isSameDay(new Date(task.completedAt), new Date())).length + 1
+            const completedToday =
+              prev.filter(
+                (task) => task.completed && task.completedAt && isSameDay(new Date(task.completedAt), new Date()),
+              ).length + 1
             const goal = loadDailyGoal()
             if (completedToday >= goal) {
               toast.success("🎯 Daily Goal Achieved!", {
-                description: `You've completed ${completedToday} tasks today!`
+                description: `You've completed ${completedToday} tasks today!`,
               })
               updateStreak()
             }
-            
+
             // Handle recurrence - schedule for next occurrence
-            if (t.recurrence !== 'none') {
+            if (t.recurrence !== "none") {
               setTimeout(() => {
                 createRecurringTask(t, prev, addTask)
               }, 100)
             }
           }
-          
+
           return { ...t, ...updates }
         }
         return t
-      })
+      }),
     )
   }
-  
+
   const removeTask = (id: string) => {
     setTasks((prev) => {
-      const task = prev.find(t => t.id === id)
+      const task = prev.find((t) => t.id === id)
       const newTasks = prev.filter((t) => t.id !== id)
       if (task?.isTracking) {
         stopTaskTimer(task)
       }
       toast.info("Task removed", {
-        description: `"${task?.title}" has been removed`
+        description: `"${task?.title}" has been removed`,
       })
       return newTasks
     })
@@ -351,14 +389,14 @@ function useTasks() {
               ...t,
               isTracking: false,
               timeSpent: (t.timeSpent || 0) + elapsed,
-              startTime: undefined
+              startTime: undefined,
             }
           } else {
             // Start tracking
             return {
               ...t,
               isTracking: true,
-              startTime: Date.now()
+              startTime: Date.now(),
             }
           }
         } else if (t.isTracking) {
@@ -368,11 +406,11 @@ function useTasks() {
             ...t,
             isTracking: false,
             timeSpent: (t.timeSpent || 0) + elapsed,
-            startTime: undefined
+            startTime: undefined,
           }
         }
         return t
-      })
+      }),
     )
   }
 
@@ -382,7 +420,7 @@ function useTasks() {
       updateTask(task.id, {
         isTracking: false,
         timeSpent: (task.timeSpent || 0) + elapsed,
-        startTime: undefined
+        startTime: undefined,
       })
     }
   }
@@ -391,24 +429,46 @@ function useTasks() {
 }
 
 function PomodoroTimer() {
-  const [focusMin, setFocusMin] = useState<number>(() => Number(localStorage.getItem('cc_pomo_focus') || 25))
-  const [shortBreakMin, setShortBreakMin] = useState<number>(() => Number(localStorage.getItem('cc_pomo_short') || 5))
-  const [longBreakMin, setLongBreakMin] = useState<number>(() => Number(localStorage.getItem('cc_pomo_long') || 15))
-  const [sessionsUntilLong, setSessionsUntilLong] = useState<number>(() => Number(localStorage.getItem('cc_pomo_until_long') || 4))
-  const [seconds, setSeconds] = useState<number>(() => Number(localStorage.getItem('cc_pomo_seconds') || focusMin * 60))
-  const [running, setRunning] = useState<boolean>(() => localStorage.getItem('cc_pomo_running') === '1')
-  const [mode, setMode] = useState<'focus' | 'short' | 'long'>(() => (localStorage.getItem('cc_pomo_mode') as any) || 'focus')
-  const [completedSessions, setCompletedSessions] = useState<number>(() => Number(localStorage.getItem('cc_pomo_sessions') || 0))
+  const [focusMin, setFocusMin] = useState<number>(() => Number(localStorage.getItem("cc_pomo_focus") || 25))
+  const [shortBreakMin, setShortBreakMin] = useState<number>(() => Number(localStorage.getItem("cc_pomo_short") || 5))
+  const [longBreakMin, setLongBreakMin] = useState<number>(() => Number(localStorage.getItem("cc_pomo_long") || 15))
+  const [sessionsUntilLong, setSessionsUntilLong] = useState<number>(() =>
+    Number(localStorage.getItem("cc_pomo_until_long") || 4),
+  )
+  const [seconds, setSeconds] = useState<number>(() => Number(localStorage.getItem("cc_pomo_seconds") || focusMin * 60))
+  const [running, setRunning] = useState<boolean>(() => localStorage.getItem("cc_pomo_running") === "1")
+  const [mode, setMode] = useState<"focus" | "short" | "long">(
+    () => (localStorage.getItem("cc_pomo_mode") as any) || "focus",
+  )
+  const [completedSessions, setCompletedSessions] = useState<number>(() =>
+    Number(localStorage.getItem("cc_pomo_sessions") || 0),
+  )
 
   // persist settings
-  useEffect(() => { localStorage.setItem('cc_pomo_focus', String(focusMin)) }, [focusMin])
-  useEffect(() => { localStorage.setItem('cc_pomo_short', String(shortBreakMin)) }, [shortBreakMin])
-  useEffect(() => { localStorage.setItem('cc_pomo_long', String(longBreakMin)) }, [longBreakMin])
-  useEffect(() => { localStorage.setItem('cc_pomo_until_long', String(sessionsUntilLong)) }, [sessionsUntilLong])
-  useEffect(() => { localStorage.setItem('cc_pomo_seconds', String(seconds)) }, [seconds])
-  useEffect(() => { localStorage.setItem('cc_pomo_running', running ? '1' : '0') }, [running])
-  useEffect(() => { localStorage.setItem('cc_pomo_mode', mode) }, [mode])
-  useEffect(() => { localStorage.setItem('cc_pomo_sessions', String(completedSessions)) }, [completedSessions])
+  useEffect(() => {
+    localStorage.setItem("cc_pomo_focus", String(focusMin))
+  }, [focusMin])
+  useEffect(() => {
+    localStorage.setItem("cc_pomo_short", String(shortBreakMin))
+  }, [shortBreakMin])
+  useEffect(() => {
+    localStorage.setItem("cc_pomo_long", String(longBreakMin))
+  }, [longBreakMin])
+  useEffect(() => {
+    localStorage.setItem("cc_pomo_until_long", String(sessionsUntilLong))
+  }, [sessionsUntilLong])
+  useEffect(() => {
+    localStorage.setItem("cc_pomo_seconds", String(seconds))
+  }, [seconds])
+  useEffect(() => {
+    localStorage.setItem("cc_pomo_running", running ? "1" : "0")
+  }, [running])
+  useEffect(() => {
+    localStorage.setItem("cc_pomo_mode", mode)
+  }, [mode])
+  useEffect(() => {
+    localStorage.setItem("cc_pomo_sessions", String(completedSessions))
+  }, [completedSessions])
 
   useEffect(() => {
     if (!running) return
@@ -420,32 +480,34 @@ function PomodoroTimer() {
 
   useEffect(() => {
     if (seconds > 0) return
-    if (mode === 'focus') {
+    if (mode === "focus") {
       const nextIsLong = (completedSessions + 1) % sessionsUntilLong === 0
       setCompletedSessions((c) => c + 1)
-      setMode(nextIsLong ? 'long' : 'short')
+      setMode(nextIsLong ? "long" : "short")
       setSeconds((nextIsLong ? longBreakMin : shortBreakMin) * 60)
     } else {
-      setMode('focus')
+      setMode("focus")
       setSeconds(focusMin * 60)
     }
     // optional notification
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'granted') {
-        new Notification(mode === 'focus' ? 'Break time!' : 'Focus time!')
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "granted") {
+        new Notification(mode === "focus" ? "Break time!" : "Focus time!")
       }
     }
   }, [seconds])
 
-  const resetTo = (newMode: 'focus' | 'short' | 'long') => {
+  const resetTo = (newMode: "focus" | "short" | "long") => {
     setRunning(false)
     setMode(newMode)
-    setSeconds((newMode === 'focus' ? focusMin : newMode === 'short' ? shortBreakMin : longBreakMin) * 60)
+    setSeconds((newMode === "focus" ? focusMin : newMode === "short" ? shortBreakMin : longBreakMin) * 60)
   }
 
-  const minutesPart = Math.floor(seconds / 60).toString().padStart(2, '0')
-  const secondsPart = String(seconds % 60).padStart(2, '0')
-  const total = (mode === 'focus' ? focusMin : mode === 'short' ? shortBreakMin : longBreakMin) * 60
+  const minutesPart = Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, "0")
+  const secondsPart = String(seconds % 60).padStart(2, "0")
+  const total = (mode === "focus" ? focusMin : mode === "short" ? shortBreakMin : longBreakMin) * 60
   const progress = 1 - seconds / total
 
   return (
@@ -453,31 +515,75 @@ function PomodoroTimer() {
       <CardHeader>
         <CardTitle>Pomodoro</CardTitle>
         <CardDescription>
-          {mode === 'focus' ? 'Focus' : mode === 'short' ? 'Short break' : 'Long break'} • Sessions: {completedSessions}
+          {mode === "focus" ? "Focus" : mode === "short" ? "Short break" : "Long break"} • Sessions: {completedSessions}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="text-5xl font-semibold text-center tabular-nums">{minutesPart}:{secondsPart}</div>
-        <div className="w-full h-2 rounded bg-muted"><div className="h-2 rounded" style={{ width: `${progress * 100}%`, background: 'var(--color-chart-1)' }} /></div>
+        <div className="text-5xl font-semibold text-center tabular-nums">
+          {minutesPart}:{secondsPart}
+        </div>
+        <div className="w-full h-2 rounded bg-muted">
+          <div className="h-2 rounded" style={{ width: `${progress * 100}%`, background: "var(--color-chart-1)" }} />
+        </div>
         <div className="flex items-center justify-center gap-2 flex-wrap">
-          <Button onClick={() => setRunning((r) => !r)}>{running ? 'Pause' : 'Start'}</Button>
-          <Button variant="secondary" onClick={() => resetTo(mode)}>Reset</Button>
-          <Button variant="secondary" onClick={() => resetTo('focus')}>Focus</Button>
-          <Button variant="secondary" onClick={() => resetTo('short')}>Short</Button>
-          <Button variant="secondary" onClick={() => resetTo('long')}>Long</Button>
+          <Button onClick={() => setRunning((r) => !r)}>{running ? "Pause" : "Start"}</Button>
+          <Button variant="secondary" onClick={() => resetTo(mode)}>
+            Reset
+          </Button>
+          <Button variant="secondary" onClick={() => resetTo("focus")}>
+            Focus
+          </Button>
+          <Button variant="secondary" onClick={() => resetTo("short")}>
+            Short
+          </Button>
+          <Button variant="secondary" onClick={() => resetTo("long")}>
+            Long
+          </Button>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <label className="text-sm flex items-center gap-2">Focus (min)
-            <input className="border rounded px-2 py-1 bg-background w-full" type="number" min={1} max={120} value={focusMin} onChange={(e) => setFocusMin(Math.max(1, Number(e.target.value)||25))} />
+          <label className="text-sm flex items-center gap-2">
+            Focus (min)
+            <input
+              className="border rounded px-2 py-1 bg-background w-full"
+              type="number"
+              min={1}
+              max={120}
+              value={focusMin}
+              onChange={(e) => setFocusMin(Math.max(1, Number(e.target.value) || 25))}
+            />
           </label>
-          <label className="text-sm flex items-center gap-2">Short break (min)
-            <input className="border rounded px-2 py-1 bg-background w-full" type="number" min={1} max={60} value={shortBreakMin} onChange={(e) => setShortBreakMin(Math.max(1, Number(e.target.value)||5))} />
+          <label className="text-sm flex items-center gap-2">
+            Short break (min)
+            <input
+              className="border rounded px-2 py-1 bg-background w-full"
+              type="number"
+              min={1}
+              max={60}
+              value={shortBreakMin}
+              onChange={(e) => setShortBreakMin(Math.max(1, Number(e.target.value) || 5))}
+            />
           </label>
-          <label className="text-sm flex items-center gap-2">Long break (min)
-            <input className="border rounded px-2 py-1 bg-background w-full" type="number" min={1} max={60} value={longBreakMin} onChange={(e) => setLongBreakMin(Math.max(1, Number(e.target.value)||15))} />
+          <label className="text-sm flex items-center gap-2">
+            Long break (min)
+            <input
+              className="border rounded px-2 py-1 bg-background w-full"
+              type="number"
+              min={1}
+              max={60}
+              value={longBreakMin}
+              onChange={(e) => setLongBreakMin(Math.max(1, Number(e.target.value) || 15))}
+            />
           </label>
-          <label className="text-sm flex items-center gap-2">Sessions per long break
-            <input className="border rounded px-2 py-1 bg-background w-full" type="number" min={1} max={12} value={sessionsUntilLong} onChange={(e) => setSessionsUntilLong(Math.max(1, Number(e.target.value)||4))} />
+          <label className="text-sm flex items-center gap-2">
+            Sessions per long break
+            <input
+              className="border rounded px-2 py-1 bg-background w-full"
+              type="number"
+              min={1}
+              max={12}
+              value={sessionsUntilLong}
+              onChange={(e) => setSessionsUntilLong(Math.max(1, Number(e.target.value) || 4))}
+            />
           </label>
         </div>
         <div className="text-xs text-muted-foreground text-center">
@@ -492,33 +598,35 @@ function TaskList() {
   const { tasks, addTask, updateTask, toggleTask, removeTask, toggleTaskTimer } = useTasks()
   const [title, setTitle] = useState("")
   const [notes, setNotes] = useState("")
-  const [priority, setPriority] = useState<Task['priority']>('low')
+  const [priority, setPriority] = useState<Task["priority"]>("low")
   const [deadline, setDeadline] = useState<string | undefined>(undefined)
-  const [group, setGroup] = useState<string>('General')
+  const [group, setGroup] = useState<string>("General")
   const [estimatedTime, setEstimatedTime] = useState<string>("")
-  const [recurrence, setRecurrence] = useState<Task['recurrence']>('none')
+  const [recurrence, setRecurrence] = useState<Task["recurrence"]>("none")
   const [reminder, setReminder] = useState<string>("")
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState("created-desc")
-  const [groupFilter, setGroupFilter] = useState<string>('All')
+  const [groupFilter, setGroupFilter] = useState<string>("All")
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState("")
   const [editNotes, setEditNotes] = useState("")
-  const [editPriority, setEditPriority] = useState<Task['priority']>('low')
+  const [editPriority, setEditPriority] = useState<Task["priority"]>("low")
   const [editDeadline, setEditDeadline] = useState<string | undefined>(undefined)
-  const [editGroup, setEditGroup] = useState<string>('General')
+  const [editGroup, setEditGroup] = useState<string>("General")
   const [editEstimatedTime, setEditEstimatedTime] = useState<string>("")
-  const [editRecurrence, setEditRecurrence] = useState<Task['recurrence']>('none')
+  const [editRecurrence, setEditRecurrence] = useState<Task["recurrence"]>("none")
   const [editReminder, setEditReminder] = useState<string>("")
 
   const planned = tasks.length
   const done = tasks.filter((t) => t.completed).length
-  const completedToday = tasks.filter((t) => t.completed && t.completedAt && isSameDay(new Date(t.completedAt), new Date())).length
-  
+  const completedToday = tasks.filter(
+    (t) => t.completed && t.completedAt && isSameDay(new Date(t.completedAt), new Date()),
+  ).length
+
   // Force re-render every minute to update time displays
   const [, setTick] = useState(0)
   useEffect(() => {
-    const interval = setInterval(() => setTick(t => t + 1), 60000)
+    const interval = setInterval(() => setTick((t) => t + 1), 60000)
     return () => clearInterval(interval)
   }, [])
 
@@ -530,21 +638,11 @@ function TaskList() {
           <CardDescription>Plan and complete your day</CardDescription>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportTasks(tasks)}
-            className="gap-2"
-          >
+          <Button variant="outline" size="sm" onClick={() => exportTasks(tasks)} className="gap-2">
             <Download className="h-4 w-4" />
             Export
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={requestNotificationPermission}
-            className="gap-2"
-          >
+          <Button variant="outline" size="sm" onClick={requestNotificationPermission} className="gap-2 bg-transparent">
             <Bell className="h-4 w-4" />
             Enable Notifications
           </Button>
@@ -552,14 +650,19 @@ function TaskList() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid md:grid-cols-2 gap-3">
-          <Input placeholder="Add a task..." value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && document.getElementById('add-task-btn')?.click()} />
+          <Input
+            placeholder="Add a task..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && document.getElementById("add-task-btn")?.click()}
+          />
           <Textarea placeholder="Optional notes..." value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <select
             className="border rounded-md px-2 py-1 bg-background text-sm"
             value={priority}
-            onChange={(e) => setPriority(e.target.value as Task['priority'])}
+            onChange={(e) => setPriority(e.target.value as Task["priority"])}
           >
             <option value="low">Low Priority</option>
             <option value="medium">Medium Priority</option>
@@ -568,7 +671,7 @@ function TaskList() {
           <input
             className="border rounded-md px-2 py-1 bg-background text-sm"
             type="date"
-            value={deadline || ''}
+            value={deadline || ""}
             onChange={(e) => setDeadline(e.target.value || undefined)}
             placeholder="Deadline"
           />
@@ -587,7 +690,7 @@ function TaskList() {
           />
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          <Select value={recurrence} onValueChange={(v) => setRecurrence(v as Task['recurrence'])}>
+          <Select value={recurrence} onValueChange={(v) => setRecurrence(v as Task["recurrence"])}>
             <SelectTrigger className="text-sm">
               <SelectValue placeholder="Recurrence" />
             </SelectTrigger>
@@ -614,18 +717,18 @@ function TaskList() {
                 notes.trim() || undefined,
                 priority,
                 deadline,
-                group.trim() || 'General',
+                group.trim() || "General",
                 estimatedTime ? Number(estimatedTime) : undefined,
                 recurrence,
-                reminder || undefined
+                reminder || undefined,
               )
               setTitle("")
               setNotes("")
-              setPriority('low')
+              setPriority("low")
               setDeadline(undefined)
-              setGroup('General')
+              setGroup("General")
               setEstimatedTime("")
-              setRecurrence('none')
+              setRecurrence("none")
               setReminder("")
             }}
             className="w-full"
@@ -663,8 +766,10 @@ function TaskList() {
               onChange={(e) => setGroupFilter(e.target.value)}
             >
               <option value="All">All groups</option>
-              {Array.from(new Set(tasks.map((t) => t.group || 'General'))).map((g) => (
-                <option key={g} value={g}>{g}</option>
+              {Array.from(new Set(tasks.map((t) => t.group || "General"))).map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
               ))}
             </select>
           </div>
@@ -678,19 +783,21 @@ function TaskList() {
               .filter((t) => {
                 if (!query.trim()) return true
                 const q = query.toLowerCase()
-                return (t.title || '').toLowerCase().includes(q) || (t.notes || '').toLowerCase().includes(q)
+                return (t.title || "").toLowerCase().includes(q) || (t.notes || "").toLowerCase().includes(q)
               })
-              .filter((t) => (groupFilter === 'All' ? true : (t.group || 'General') === groupFilter))
+              .filter((t) => (groupFilter === "All" ? true : (t.group || "General") === groupFilter))
               .sort((a, b) => {
                 switch (sort) {
-                  case 'priority-desc':
+                  case "priority-desc":
                     return (
-                      ['high', 'medium', 'low'].indexOf(a.priority || 'low') -
-                      ['high', 'medium', 'low'].indexOf(b.priority || 'low')
+                      ["high", "medium", "low"].indexOf(a.priority || "low") -
+                      ["high", "medium", "low"].indexOf(b.priority || "low")
                     )
-                  case 'deadline-asc':
-                    return new Date(a.deadline || '2100-01-01').getTime() - new Date(b.deadline || '2100-01-01').getTime()
-                  case 'created-asc':
+                  case "deadline-asc":
+                    return (
+                      new Date(a.deadline || "2100-01-01").getTime() - new Date(b.deadline || "2100-01-01").getTime()
+                    )
+                  case "created-asc":
                     return a.createdAt - b.createdAt
                   default:
                     return b.createdAt - a.createdAt
@@ -699,24 +806,35 @@ function TaskList() {
               .map((t) => {
                 const currentElapsed = t.isTracking && t.startTime ? Math.floor((Date.now() - t.startTime) / 60000) : 0
                 const totalTime = (t.timeSpent || 0) + currentElapsed
-                const priorityColors = { low: 'bg-gray-500', medium: 'bg-yellow-500', high: 'bg-red-500' }
-                const priorityColor = priorityColors[t.priority || 'low']
-                
+                const priorityColors = { low: "bg-gray-500", medium: "bg-yellow-500", high: "bg-red-500" }
+                const priorityColor = priorityColors[t.priority || "low"]
+
                 return (
-                  <li key={t.id} className={`flex items-start gap-3 rounded-md border p-3 bg-card ${t.completed ? 'opacity-60' : ''}`}>
+                  <li
+                    key={t.id}
+                    className={`flex items-start gap-3 rounded-md border p-3 bg-card ${t.completed ? "opacity-60" : ""}`}
+                  >
                     <Checkbox checked={t.completed} onCheckedChange={() => toggleTask(t.id)} className="mt-1" />
                     <div className="flex-1 min-w-0">
                       {editingId === t.id ? (
                         <div className="space-y-2">
                           <div className="grid md:grid-cols-2 gap-2">
-                            <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Task title" />
-                            <Input placeholder="Notes" value={editNotes} onChange={(e) => setEditNotes(e.target.value)} />
+                            <Input
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                              placeholder="Task title"
+                            />
+                            <Input
+                              placeholder="Notes"
+                              value={editNotes}
+                              onChange={(e) => setEditNotes(e.target.value)}
+                            />
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <select
                               className="border rounded-md px-2 py-1 bg-background text-sm"
                               value={editPriority}
-                              onChange={(e) => setEditPriority(e.target.value as Task['priority'])}
+                              onChange={(e) => setEditPriority(e.target.value as Task["priority"])}
                             >
                               <option value="low">Low</option>
                               <option value="medium">Medium</option>
@@ -725,14 +843,28 @@ function TaskList() {
                             <input
                               className="border rounded-md px-2 py-1 bg-background text-sm"
                               type="date"
-                              value={editDeadline || ''}
+                              value={editDeadline || ""}
                               onChange={(e) => setEditDeadline(e.target.value || undefined)}
                             />
-                            <Input placeholder="Group" value={editGroup} onChange={(e) => setEditGroup(e.target.value)} className="text-sm" />
-                            <Input placeholder="Est. time (min)" type="number" value={editEstimatedTime} onChange={(e) => setEditEstimatedTime(e.target.value)} className="text-sm" />
+                            <Input
+                              placeholder="Group"
+                              value={editGroup}
+                              onChange={(e) => setEditGroup(e.target.value)}
+                              className="text-sm"
+                            />
+                            <Input
+                              placeholder="Est. time (min)"
+                              type="number"
+                              value={editEstimatedTime}
+                              onChange={(e) => setEditEstimatedTime(e.target.value)}
+                              className="text-sm"
+                            />
                           </div>
                           <div className="grid grid-cols-2 gap-2">
-                            <Select value={editRecurrence} onValueChange={(v) => setEditRecurrence(v as Task['recurrence'])}>
+                            <Select
+                              value={editRecurrence}
+                              onValueChange={(v) => setEditRecurrence(v as Task["recurrence"])}
+                            >
                               <SelectTrigger className="text-sm">
                                 <SelectValue />
                               </SelectTrigger>
@@ -746,7 +878,7 @@ function TaskList() {
                             <input
                               className="border rounded-md px-2 py-1 bg-background text-sm"
                               type="datetime-local"
-                              value={editReminder || ''}
+                              value={editReminder || ""}
                               onChange={(e) => setEditReminder(e.target.value)}
                             />
                           </div>
@@ -759,7 +891,7 @@ function TaskList() {
                                   notes: editNotes,
                                   priority: editPriority,
                                   deadline: editDeadline,
-                                  group: editGroup || 'General',
+                                  group: editGroup || "General",
                                   estimatedTime: editEstimatedTime ? Number(editEstimatedTime) : undefined,
                                   recurrence: editRecurrence,
                                   reminder: editReminder || undefined,
@@ -780,17 +912,19 @@ function TaskList() {
                             <div className="flex-1">
                               <div className="font-medium flex items-center gap-2 flex-wrap">
                                 {t.title}
-                                <Badge 
-                                  variant="outline" 
+                                <Badge
+                                  variant="outline"
                                   className={`text-xs ${
-                                    t.priority === 'high' ? 'bg-red-500 text-white border-red-500' :
-                                    t.priority === 'medium' ? 'bg-yellow-500 text-white border-yellow-500' :
-                                    'bg-gray-500 text-white border-gray-500'
+                                    t.priority === "high"
+                                      ? "bg-red-500 text-white border-red-500"
+                                      : t.priority === "medium"
+                                        ? "bg-yellow-500 text-white border-yellow-500"
+                                        : "bg-gray-500 text-white border-gray-500"
                                   }`}
                                 >
-                                  {t.priority || 'low'}
+                                  {t.priority || "low"}
                                 </Badge>
-                                {t.recurrence !== 'none' && (
+                                {t.recurrence !== "none" && (
                                   <Badge variant="outline" className="text-xs">
                                     <Repeat className="h-3 w-3 mr-1" />
                                     {t.recurrence}
@@ -803,13 +937,17 @@ function TaskList() {
                               <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-2">
                                 {t.group && <span>📁 {t.group}</span>}
                                 {t.deadline && (
-                                  <span className={new Date(t.deadline) < new Date() && !t.completed ? 'text-red-500 font-semibold' : ''}>
+                                  <span
+                                    className={
+                                      new Date(t.deadline) < new Date() && !t.completed
+                                        ? "text-red-500 font-semibold"
+                                        : ""
+                                    }
+                                  >
                                     📅 {t.deadline}
                                   </span>
                                 )}
-                                {t.estimatedTime && (
-                                  <span>⏱️ Est: {formatTime(t.estimatedTime)}</span>
-                                )}
+                                {t.estimatedTime && <span>⏱️ Est: {formatTime(t.estimatedTime)}</span>}
                                 {totalTime > 0 && (
                                   <span className="flex items-center gap-1">
                                     <Clock className="h-3 w-3" />
@@ -832,7 +970,7 @@ function TaskList() {
                             className="gap-1"
                           >
                             {t.isTracking ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-                            {t.isTracking ? 'Stop' : 'Start'}
+                            {t.isTracking ? "Stop" : "Start"}
                           </Button>
                         )}
                         <Button
@@ -840,14 +978,14 @@ function TaskList() {
                           variant="secondary"
                           onClick={() => {
                             setEditingId(t.id)
-                            setEditTitle(t.title || '')
-                            setEditNotes(t.notes || '')
-                            setEditPriority(t.priority || 'low')
+                            setEditTitle(t.title || "")
+                            setEditNotes(t.notes || "")
+                            setEditPriority(t.priority || "low")
                             setEditDeadline(t.deadline)
-                            setEditGroup(t.group || 'General')
-                            setEditEstimatedTime(t.estimatedTime?.toString() || '')
-                            setEditRecurrence(t.recurrence || 'none')
-                            setEditReminder(t.reminder || '')
+                            setEditGroup(t.group || "General")
+                            setEditEstimatedTime(t.estimatedTime?.toString() || "")
+                            setEditRecurrence(t.recurrence || "none")
+                            setEditReminder(t.reminder || "")
                           }}
                         >
                           <RotateCcw className="h-3 w-3" />
@@ -867,14 +1005,14 @@ function TaskList() {
   )
 }
 
-function groupByDay(tasks: Task[], days: number = 7) {
+function groupByDay(tasks: Task[], days = 7) {
   const map = new Map<string, { date: string; planned: number; completed: number }>()
   const now = new Date()
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(now)
     d.setDate(now.getDate() - i)
     const key = d.toISOString().slice(0, 10)
-    const dateFormatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const dateFormatted = d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
     map.set(key, { date: dateFormatted, planned: 0, completed: 0 })
   }
   for (const t of tasks) {
@@ -892,12 +1030,12 @@ function groupByDay(tasks: Task[], days: number = 7) {
   return Array.from(map.values())
 }
 
-function groupByWeek(tasks: Task[], weeks: number = 4) {
+function groupByWeek(tasks: Task[], weeks = 4) {
   const map = new Map<string, { week: string; planned: number; completed: number }>()
   const now = new Date()
   for (let i = weeks - 1; i >= 0; i--) {
     const d = new Date(now)
-    d.setDate(now.getDate() - (i * 7))
+    d.setDate(now.getDate() - i * 7)
     const weekStart = new Date(d)
     weekStart.setDate(d.getDate() - d.getDay())
     const weekKey = weekStart.toISOString().slice(0, 10)
@@ -928,7 +1066,7 @@ function groupByWeek(tasks: Task[], weeks: number = 4) {
 function ProductivityChart() {
   const [mounted, setMounted] = useState(false)
   const [tasks, setTasks] = useState<Task[]>([])
-  const [view, setView] = useState<'daily' | 'weekly'>('daily')
+  const [view, setView] = useState<"daily" | "weekly">("daily")
 
   useEffect(() => {
     setMounted(true)
@@ -945,8 +1083,8 @@ function ProductivityChart() {
 
   const dailyData = useMemo(() => groupByDay(tasks, 7), [tasks])
   const weeklyData = useMemo(() => groupByWeek(tasks, 4), [tasks])
-  const data = view === 'daily' ? dailyData : weeklyData
-  const dataKey = view === 'daily' ? 'date' : 'week'
+  const data = view === "daily" ? dailyData : weeklyData
+  const dataKey = view === "daily" ? "date" : "week"
 
   if (!mounted) return null
 
@@ -956,14 +1094,14 @@ function ProductivityChart() {
         <div>
           <CardTitle>Productivity Analytics</CardTitle>
           <CardDescription>
-            {view === 'daily' ? 'Daily trends (last 7 days)' : 'Weekly trends (last 4 weeks)'}
+            {view === "daily" ? "Daily trends (last 7 days)" : "Weekly trends (last 4 weeks)"}
           </CardDescription>
         </div>
         <div className="flex gap-2">
-          <Button variant={view === 'daily' ? 'default' : 'outline'} size="sm" onClick={() => setView('daily')}>
+          <Button variant={view === "daily" ? "default" : "outline"} size="sm" onClick={() => setView("daily")}>
             Daily
           </Button>
-          <Button variant={view === 'weekly' ? 'default' : 'outline'} size="sm" onClick={() => setView('weekly')}>
+          <Button variant={view === "weekly" ? "default" : "outline"} size="sm" onClick={() => setView("weekly")}>
             Weekly
           </Button>
           <Button variant="outline" size="sm" onClick={() => exportProductivityData(tasks)} className="gap-1">
@@ -983,65 +1121,82 @@ function ProductivityChart() {
               <AreaChart data={data} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
                 <defs>
                   <linearGradient id="plannedGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-chart-3)" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="var(--color-chart-3)" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="completedGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-chart-1)" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="var(--color-chart-1)" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                <XAxis dataKey={dataKey} tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} />
-                <YAxis tick={{ fill: "var(--color-muted-foreground)" }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey={dataKey} tick={{ fill: "#6b7280", fontSize: 12 }} />
+                <YAxis tick={{ fill: "#6b7280" }} />
                 <Tooltip
                   contentStyle={{
-                    background: "var(--color-popover)",
-                    color: "var(--color-popover-foreground)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "var(--radius-md)",
+                    background: "#ffffff",
+                    color: "#000000",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
                   }}
                 />
-                <Area type="monotone" dataKey="planned" stroke="var(--color-chart-3)" fill="url(#plannedGrad)" strokeWidth={2} name="Planned" />
-                <Area type="monotone" dataKey="completed" stroke="var(--color-chart-1)" fill="url(#completedGrad)" strokeWidth={2} name="Completed" />
+                <Area
+                  type="monotone"
+                  dataKey="planned"
+                  stroke="#f59e0b"
+                  fill="url(#plannedGrad)"
+                  strokeWidth={2}
+                  name="Planned"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="completed"
+                  stroke="#10b981"
+                  fill="url(#completedGrad)"
+                  strokeWidth={2}
+                  name="Completed"
+                />
+                <Legend />
               </AreaChart>
             </ResponsiveContainer>
           </TabsContent>
           <TabsContent value="bar" className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                <XAxis dataKey={dataKey} tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} />
-                <YAxis tick={{ fill: "var(--color-muted-foreground)" }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey={dataKey} tick={{ fill: "#6b7280", fontSize: 12 }} />
+                <YAxis tick={{ fill: "#6b7280" }} />
                 <Tooltip
                   contentStyle={{
-                    background: "var(--color-popover)",
-                    color: "var(--color-popover-foreground)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "var(--radius-md)",
+                    background: "#ffffff",
+                    color: "#000000",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
                   }}
                 />
-                <Bar dataKey="planned" fill="var(--color-chart-3)" name="Planned" />
-                <Bar dataKey="completed" fill="var(--color-chart-1)" name="Completed" />
+                <Bar dataKey="planned" fill="#f59e0b" name="Planned" />
+                <Bar dataKey="completed" fill="#10b981" name="Completed" />
+                <Legend />
               </BarChart>
             </ResponsiveContainer>
           </TabsContent>
           <TabsContent value="line" className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                <XAxis dataKey={dataKey} tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} />
-                <YAxis tick={{ fill: "var(--color-muted-foreground)" }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey={dataKey} tick={{ fill: "#6b7280", fontSize: 12 }} />
+                <YAxis tick={{ fill: "#6b7280" }} />
                 <Tooltip
                   contentStyle={{
-                    background: "var(--color-popover)",
-                    color: "var(--color-popover-foreground)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "var(--radius-md)",
+                    background: "#ffffff",
+                    color: "#000000",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
                   }}
                 />
-                <Line type="monotone" dataKey="planned" stroke="var(--color-chart-3)" strokeWidth={2} name="Planned" />
-                <Line type="monotone" dataKey="completed" stroke="var(--color-chart-1)" strokeWidth={2} name="Completed" />
+                <Line type="monotone" dataKey="planned" stroke="#f59e0b" strokeWidth={2} name="Planned" />
+                <Line type="monotone" dataKey="completed" stroke="#10b981" strokeWidth={2} name="Completed" />
+                <Legend />
               </LineChart>
             </ResponsiveContainer>
           </TabsContent>
@@ -1062,12 +1217,14 @@ function ProductivityStats() {
   }, [])
 
   const totalTasks = tasks.length
-  const completedTasks = tasks.filter(t => t.completed).length
+  const completedTasks = tasks.filter((t) => t.completed).length
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
-  const completedToday = tasks.filter(t => t.completed && t.completedAt && isSameDay(new Date(t.completedAt), new Date())).length
+  const completedToday = tasks.filter(
+    (t) => t.completed && t.completedAt && isSameDay(new Date(t.completedAt), new Date()),
+  ).length
   const totalTimeSpent = tasks.reduce((sum, t) => sum + (t.timeSpent || 0), 0)
-  const highPriorityTasks = tasks.filter(t => t.priority === 'high' && !t.completed).length
-  const overdueTasks = tasks.filter(t => t.deadline && new Date(t.deadline) < new Date() && !t.completed).length
+  const highPriorityTasks = tasks.filter((t) => t.priority === "high" && !t.completed).length
+  const overdueTasks = tasks.filter((t) => t.deadline && new Date(t.deadline) < new Date() && !t.completed).length
 
   const streak = loadStreak()
   const dailyGoal = loadDailyGoal()
@@ -1088,9 +1245,7 @@ function ProductivityStats() {
           </div>
           <div className="space-y-1">
             <div className="text-sm text-muted-foreground">Current Streak</div>
-            <div className="text-2xl font-bold flex items-center gap-2">
-              🔥 {streak.current} days
-            </div>
+            <div className="text-2xl font-bold flex items-center gap-2">🔥 {streak.current} days</div>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -1106,7 +1261,9 @@ function ProductivityStats() {
         <div className="space-y-2 pt-2 border-t">
           <div className="text-sm font-medium">Daily Goal Progress</div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{completedToday} / {dailyGoal} tasks</span>
+            <span>
+              {completedToday} / {dailyGoal} tasks
+            </span>
             <span>{goalProgress}%</span>
           </div>
           <Progress value={goalProgress} className="h-3" />
@@ -1115,12 +1272,12 @@ function ProductivityStats() {
           <div className="pt-2 border-t space-y-1">
             {highPriorityTasks > 0 && (
               <div className="text-sm text-yellow-600 dark:text-yellow-400">
-                ⚠️ {highPriorityTasks} high priority task{highPriorityTasks > 1 ? 's' : ''} remaining
+                ⚠️ {highPriorityTasks} high priority task{highPriorityTasks > 1 ? "s" : ""} remaining
               </div>
             )}
             {overdueTasks > 0 && (
               <div className="text-sm text-red-600 dark:text-red-400">
-                ⚠️ {overdueTasks} overdue task{overdueTasks > 1 ? 's' : ''}
+                ⚠️ {overdueTasks} overdue task{overdueTasks > 1 ? "s" : ""}
               </div>
             )}
           </div>
@@ -1134,22 +1291,24 @@ function DailyGoals() {
   const [dailyGoal, setDailyGoal] = useState(loadDailyGoal())
   const [tasks, setTasks] = useState<Task[]>([])
   const streak = loadStreak()
-  
+
   useEffect(() => {
     setTasks(loadTasks())
     const onLocal = () => setTasks(loadTasks())
     window.addEventListener("cc_tasks_updated", onLocal as EventListener)
     return () => window.removeEventListener("cc_tasks_updated", onLocal as EventListener)
   }, [])
-  
-  const completedToday = tasks.filter(t => t.completed && t.completedAt && isSameDay(new Date(t.completedAt), new Date())).length
+
+  const completedToday = tasks.filter(
+    (t) => t.completed && t.completedAt && isSameDay(new Date(t.completedAt), new Date()),
+  ).length
   const goalProgress = Math.min((completedToday / dailyGoal) * 100, 100)
 
   const handleGoalChange = (newGoal: number) => {
     setDailyGoal(newGoal)
     saveDailyGoal(newGoal)
     toast.success("Daily goal updated!", {
-      description: `Target set to ${newGoal} tasks per day`
+      description: `Target set to ${newGoal} tasks per day`,
     })
   }
 
@@ -1167,26 +1326,20 @@ function DailyGoals() {
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Daily Goal</span>
             <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleGoalChange(Math.max(1, dailyGoal - 1))}
-              >
+              <Button size="sm" variant="outline" onClick={() => handleGoalChange(Math.max(1, dailyGoal - 1))}>
                 -
               </Button>
               <span className="w-12 text-center font-semibold">{dailyGoal}</span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleGoalChange(dailyGoal + 1)}
-              >
+              <Button size="sm" variant="outline" onClick={() => handleGoalChange(dailyGoal + 1)}>
                 +
               </Button>
             </div>
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Progress: {completedToday} / {dailyGoal}</span>
+              <span>
+                Progress: {completedToday} / {dailyGoal}
+              </span>
               <span>{Math.round(goalProgress)}%</span>
             </div>
             <Progress value={goalProgress} className="h-3" />
@@ -1200,7 +1353,7 @@ function DailyGoals() {
           <div className="text-xs text-muted-foreground">
             {completedToday >= dailyGoal
               ? "🎉 You're on track for today!"
-              : `Complete ${dailyGoal - completedToday} more task${dailyGoal - completedToday > 1 ? 's' : ''} to maintain your streak`}
+              : `Complete ${dailyGoal - completedToday} more task${dailyGoal - completedToday > 1 ? "s" : ""} to maintain your streak`}
           </div>
         </div>
       </CardContent>
@@ -1215,17 +1368,34 @@ export default function PlannerDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <TaskList />
-        </div>
-        <div className="space-y-6">
-          <DailyGoals />
-          <ProductivityStats />
-          <PomodoroTimer />
-        </div>
-      </div>
-      <ProductivityChart />
+      <Tabs defaultValue="tasks" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="tasks">Task List</TabsTrigger>
+          <TabsTrigger value="calendar">Calendar</TabsTrigger>
+        </TabsList>
+        <TabsContent value="tasks" className="space-y-6">
+          <div className="grid lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <TaskList />
+            </div>
+            <div className="space-y-6">
+              <DailyGoals />
+              <ProductivityStats />
+              <PomodoroTimer />
+            </div>
+          </div>
+          <ProductivityChart />
+        </TabsContent>
+        <TabsContent value="calendar" className="space-y-6">
+          <CalendarViewWrapper />
+        </TabsContent>
+      </Tabs>
     </div>
   )
+}
+
+function CalendarViewWrapper() {
+  const { tasks, addTask, toggleTask, removeTask } = useTasks()
+
+  return <CalendarView tasks={tasks} onAddTask={addTask} onToggleTask={toggleTask} onRemoveTask={removeTask} />
 }

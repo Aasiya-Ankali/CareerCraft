@@ -21,6 +21,21 @@ export default function Navbar() {
           <Button variant="ghost" asChild>
             <Link href="/planner">Planner</Link>
           </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/companies">Companies</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/interviews">Interviews</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/roadmaps">Roadmaps</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/bookmarks">Bookmarks</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/jobs">Jobs</Link>
+          </Button>
           {/* Auth area */}
           {user ? (
             <div className="flex items-center gap-2 pl-2 ml-2 border-l">
