@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+google-generativeai
+pytesseract
+pdfplumber
+pdf2image
+python-multipart
+

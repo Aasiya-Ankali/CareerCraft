@@ -154,6 +154,14 @@ export default function ResumeAnalyzer() {
   const [jobDesc, setJobDesc] = useState("")
   const [resume, setResume] = useState("")
   const [busy, setBusy] = useState(false)
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
+  const [result, setResult] = useState<{
+    match_score: number
+    missing_keywords: string[]
+    suggestions: string[]
+    analysis: string
+  } | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const [savedResumes, setSavedResumes] = useState<SavedResume[]>([])
   const [savedJobs, setSavedJobs] = useState<SavedJob[]>([])
@@ -165,10 +173,37 @@ export default function ResumeAnalyzer() {
     [resume, jobDesc]
   )
 
-  const handleAnalyze = () => {
-    if (!resume.trim() || !jobDesc.trim()) return
+  const handleAnalyze = async () => {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
+    const form = new FormData()
+    if (resumeFile) {
+      form.append("resumeFile", resumeFile)
+    }
+    if (resume.trim()) form.append("resumeText", resume)
+    if (jobDesc.trim()) form.append("jobDesc", jobDesc)
+    if (!resumeFile && !resume.trim()) {
+      setError("Provide a PDF or paste resume text")
+      return
+    }
     setBusy(true)
-    setTimeout(() => setBusy(false), 600)
+    setError(null)
+    setResult(null)
+    try {
+      const resp = await fetch(`${backendUrl}/analyze`, {
+        method: "POST",
+        body: form,
+      })
+      if (!resp.ok) {
+        const txt = await resp.text()
+        throw new Error(txt || `Request failed: ${resp.status}`)
+      }
+      const data = await resp.json()
+      setResult(data)
+    } catch (e: any) {
+      setError(e?.message || "Analysis failed")
+    } finally {
+      setBusy(false)
+    }
   }
 
   const handleSaveResume = () => {
@@ -315,6 +350,11 @@ export default function ResumeAnalyzer() {
                     onChange={(e) => setResume(e.target.value)}
                   />
                   <Input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
+                  />
+                  <Input
                     placeholder="Resume name (e.g., Full Stack Resume)"
                     value={resumeName}
                     onChange={(e) => setResumeName(e.target.value)}
@@ -348,6 +388,51 @@ export default function ResumeAnalyzer() {
                   {jobTitle ? `Target role: ${jobTitle}` : "Target role not set"}
                 </div>
               </div>
+
+              {error ? (
+                <div className="text-sm text-red-600">{error}</div>
+              ) : null}
+
+              {result ? (
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="p-4 rounded-lg border bg-card">
+                    <div className="text-sm text-muted-foreground">AI Match Score</div>
+                    <div className="text-3xl font-semibold">{result.match_score}%</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Gemini-based analysis
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-lg border bg-card md:col-span-2">
+                    <div className="text-sm font-medium mb-2">AI Missing Keywords</div>
+                    {result.missing_keywords?.length ? (
+                      <div className="flex flex-wrap gap-2">
+                        {result.missing_keywords.slice(0, 30).map((kw) => (
+                          <span key={kw} className="text-xs px-2 py-1 rounded-full border bg-muted">
+                            {kw}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">None</div>
+                    )}
+                  </div>
+                  <div className="p-4 rounded-lg border bg-card md:col-span-3">
+                    <div className="text-sm font-medium mb-2">AI Suggestions</div>
+                    {result.suggestions?.length ? (
+                      <ul className="list-disc pl-6 text-sm leading-relaxed space-y-1">
+                        {result.suggestions.map((s, i) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">No suggestions</div>
+                    )}
+                    <div className="text-sm text-muted-foreground mt-3">
+                      {result.analysis}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="p-4 rounded-lg border bg-card">
