@@ -18,7 +18,7 @@ type AuthContextValue = {
   logout: () => void
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined)
+export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 const USERS_KEY = "cc_users"
 const SESSION_KEY = "cc_session"

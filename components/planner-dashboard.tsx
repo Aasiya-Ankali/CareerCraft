@@ -24,9 +24,9 @@ import {
   Line,
   Legend,
 } from "recharts"
-import { toast } from "sonner"
 import { Clock, Target, Bell, Download, Repeat, Play, Pause, RotateCcw } from "lucide-react"
 import CalendarView from "./calendar-view"
+import { toast } from "sonner"
 
 type Task = {
   id: string
@@ -1116,89 +1116,95 @@ function ProductivityChart() {
             <TabsTrigger value="bar">Bar</TabsTrigger>
             <TabsTrigger value="line">Line</TabsTrigger>
           </TabsList>
-          <TabsContent value="area" className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="plannedGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="completedGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey={dataKey} tick={{ fill: "#6b7280", fontSize: 12 }} />
-                <YAxis tick={{ fill: "#6b7280" }} />
-                <Tooltip
-                  contentStyle={{
-                    background: "#ffffff",
-                    color: "#000000",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="planned"
-                  stroke="#f59e0b"
-                  fill="url(#plannedGrad)"
-                  strokeWidth={2}
-                  name="Planned"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="completed"
-                  stroke="#10b981"
-                  fill="url(#completedGrad)"
-                  strokeWidth={2}
-                  name="Completed"
-                />
-                <Legend />
-              </AreaChart>
-            </ResponsiveContainer>
+          <TabsContent value="area">
+            <div style={{ width: "100%", height: "288px" }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="plannedGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="completedGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey={dataKey} tick={{ fill: "#6b7280", fontSize: 12 }} />
+                  <YAxis tick={{ fill: "#6b7280" }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "#ffffff",
+                      color: "#000000",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="planned"
+                    stroke="#f59e0b"
+                    fill="url(#plannedGrad)"
+                    strokeWidth={2}
+                    name="Planned"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="completed"
+                    stroke="#10b981"
+                    fill="url(#completedGrad)"
+                    strokeWidth={2}
+                    name="Completed"
+                  />
+                  <Legend />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </TabsContent>
-          <TabsContent value="bar" className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey={dataKey} tick={{ fill: "#6b7280", fontSize: 12 }} />
-                <YAxis tick={{ fill: "#6b7280" }} />
-                <Tooltip
-                  contentStyle={{
-                    background: "#ffffff",
-                    color: "#000000",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                  }}
-                />
-                <Bar dataKey="planned" fill="#f59e0b" name="Planned" />
-                <Bar dataKey="completed" fill="#10b981" name="Completed" />
-                <Legend />
-              </BarChart>
-            </ResponsiveContainer>
+          <TabsContent value="bar">
+            <div style={{ width: "100%", height: "288px" }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey={dataKey} tick={{ fill: "#6b7280", fontSize: 12 }} />
+                  <YAxis tick={{ fill: "#6b7280" }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "#ffffff",
+                      color: "#000000",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Bar dataKey="planned" fill="#f59e0b" name="Planned" />
+                  <Bar dataKey="completed" fill="#10b981" name="Completed" />
+                  <Legend />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </TabsContent>
-          <TabsContent value="line" className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey={dataKey} tick={{ fill: "#6b7280", fontSize: 12 }} />
-                <YAxis tick={{ fill: "#6b7280" }} />
-                <Tooltip
-                  contentStyle={{
-                    background: "#ffffff",
-                    color: "#000000",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                  }}
-                />
-                <Line type="monotone" dataKey="planned" stroke="#f59e0b" strokeWidth={2} name="Planned" />
-                <Line type="monotone" dataKey="completed" stroke="#10b981" strokeWidth={2} name="Completed" />
-                <Legend />
-              </LineChart>
-            </ResponsiveContainer>
+          <TabsContent value="line">
+            <div style={{ width: "100%", height: "288px" }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey={dataKey} tick={{ fill: "#6b7280", fontSize: 12 }} />
+                  <YAxis tick={{ fill: "#6b7280" }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "#ffffff",
+                      color: "#000000",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Line type="monotone" dataKey="planned" stroke="#f59e0b" strokeWidth={2} name="Planned" />
+                  <Line type="monotone" dataKey="completed" stroke="#10b981" strokeWidth={2} name="Completed" />
+                  <Legend />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>

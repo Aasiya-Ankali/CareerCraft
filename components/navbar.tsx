@@ -6,7 +6,22 @@ import { useAuth } from "@/components/auth-context"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 export default function Navbar() {
-  const { user, logout } = useAuth()
+  const { user, loading, logout } = useAuth()
+
+  if (loading) {
+    return (
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <Link href="/" className="font-semibold">
+            CareerCraft
+            <span className="sr-only">Home</span>
+          </Link>
+          <div className="h-8 w-32 bg-muted animate-pulse rounded" />
+        </div>
+      </header>
+    )
+  }
+
   return (
     <header className="border-b bg-card">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
