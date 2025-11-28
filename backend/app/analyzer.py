@@ -9,6 +9,59 @@ import pdfplumber
 import pytesseract
 from pdf2image import convert_from_bytes
 
+STOPWORDS = {
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "to",
+    "for",
+    "of",
+    "with",
+    "on",
+    "in",
+    "at",
+    "by",
+    "as",
+    "is",
+    "are",
+    "be",
+    "this",
+    "that",
+    "it",
+    "we",
+    "you",
+    "they",
+    "i",
+    "from",
+    "using",
+    "use",
+    "used",
+    "your",
+    "our",
+    "their",
+    "my",
+    "over",
+    "into",
+    "via",
+    "will",
+    "shall",
+    "can",
+    "would",
+    "could",
+    "should",
+    "assist",
+    "work",
+    "works",
+    "working",
+    "modern",
+    "applications",
+    "application",
+    "intern",
+    "interns",
+}
+
 
 def _safe_json_parse(text: str) -> Dict[str, Any]:
     try:
@@ -103,7 +156,10 @@ def _local_baseline_analysis(resume_text: str, job_desc: str) -> Dict[str, Any]:
     import re
 
     def tokenize(s: str) -> List[str]:
-        return [t for t in re.sub(r"[^a-z0-9\s+#.]", " ", s.lower()).split() if t]
+        tokens = [
+            t for t in re.sub(r"[^a-z0-9\s+#.]", " ", s.lower()).split() if t and len(t) > 2
+        ]
+        return [t for t in tokens if t not in STOPWORDS]
 
     def unique(tokens: List[str]) -> List[str]:
         seen: set[str] = set()
